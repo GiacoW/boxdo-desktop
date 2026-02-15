@@ -2,6 +2,30 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, Notification, powe
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 
+// Handle Squirrel.Windows events (install, update, uninstall)
+// Must be at the very top before app.whenReady()
+if (process.platform === 'win32') {
+  try {
+    if (require('electron-squirrel-startup')) app.quit();
+  } catch {
+    // electron-squirrel-startup not installed — handle manually
+    const cmd = process.argv[1];
+    if (cmd === '--squirrel-install' || cmd === '--squirrel-updated') {
+      const { spawn } = require('child_process');
+      const updateExe = path.resolve(process.execPath, '..', '..', 'Update.exe');
+      spawn(updateExe, ['--createShortcut', path.basename(process.execPath)], { detached: true });
+      app.quit();
+    } else if (cmd === '--squirrel-uninstall') {
+      const { spawn } = require('child_process');
+      const updateExe = path.resolve(process.execPath, '..', '..', 'Update.exe');
+      spawn(updateExe, ['--removeShortcut', path.basename(process.execPath)], { detached: true });
+      app.quit();
+    } else if (cmd === '--squirrel-obsolete') {
+      app.quit();
+    }
+  }
+}
+
 const BASE_URL = 'https://boxdo.com';
 
 let mainWindow;
