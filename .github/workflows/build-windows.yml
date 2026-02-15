@@ -6,6 +6,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -19,8 +21,27 @@ jobs:
       - name: Build & package
         run: npx electron-forge make
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build
-          path: out/make/**/*
+      - name: Get version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $env:GITHUB_OUTPUT
+
+      - name: Upload .exe to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $setupExe = Get-ChildItem -Path out/make/squirrel.windows -Filter "*.Setup.exe" -Recurse | Select-Object -First 1
+          if ($setupExe) {
+            gh release upload "v${{ steps.version.outputs.version }}" $setupExe.FullName --clobber
+          } else {
+            Write-Error "Setup.exe not found"
+            exit 1
+          }
+
+      - name: Upload nupkg to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $nupkg = Get-ChildItem -Path out/make/squirrel.windows -Filter "*full.nupkg" -Recurse | Select-Object -First 1
+          $releases = Get-ChildItem -Path out/make/squirrel.windows -Filter "RELEASES" -Recurse | Select-Object -First 1
+          if ($nupkg) { gh release upload "v${{ steps.version.outputs.version }}" $nupkg.FullName --clobber }
+          if ($releases) { gh release upload "v${{ steps.version.outputs.version }}" $releases.FullName --clobber }
