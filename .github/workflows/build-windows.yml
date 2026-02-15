@@ -33,22 +33,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $version = "v${{ steps.version.outputs.version }}"
-          $setupExe = Get-ChildItem -Path out/make -Filter "*.Setup.exe" -Recurse | Select-Object -First 1
+          $setupExe = Get-ChildItem -Path out/make -Filter "*Setup.exe" -Recurse | Select-Object -First 1
           $nupkg = Get-ChildItem -Path out/make -Filter "*full.nupkg" -Recurse | Select-Object -First 1
           $releases = Get-ChildItem -Path out/make -Filter "RELEASES" -Recurse | Select-Object -First 1
 
           if ($setupExe) {
             Write-Host "Uploading $($setupExe.FullName)"
-            gh release upload $version $setupExe.FullName --clobber
+            gh release upload $version "$($setupExe.FullName)" --clobber
           } else {
             Write-Error "Setup.exe not found"
             exit 1
           }
           if ($nupkg) {
             Write-Host "Uploading $($nupkg.FullName)"
-            gh release upload $version $nupkg.FullName --clobber
+            gh release upload $version "$($nupkg.FullName)" --clobber
           }
           if ($releases) {
             Write-Host "Uploading $($releases.FullName)"
-            gh release upload $version $releases.FullName --clobber
+            gh release upload $version "$($releases.FullName)" --clobber
           }
